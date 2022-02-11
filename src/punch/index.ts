@@ -17,15 +17,28 @@ export const doPunch = async () => {
 
   // Wait for punch navigation button be available and then click it
   await page.waitForSelector("#inOutIcon");
-  await page.evaluate(() => {
-    document.querySelector("#inOutIcon")?.parentElement?.click();
-  });
+  const inOutIcon = await page.$("#inOutIcon");
+  await (
+    (await inOutIcon?.getProperty(
+      "parentElement"
+    )) as Puppeteer.ElementHandle<Element>
+  ).click();
 
   // Do punch
   await page.waitForSelector("#saveIcon");
-  await page.evaluate(() => {
-    document.querySelector("#saveIcon")?.parentElement?.click();
-  });
+  await page.waitForNavigation({ waitUntil: "networkidle2" });
+  const elementChild = await page.$("#saveIcon");
+  if (elementChild) {
+    const parent = (
+      await elementChild.getProperty("parentElement")
+    ).asElement();
 
-  await browser.close();
+    console.log("parent", parent);
+    parent?.click();
+  }
+  console.log("here3");
+
+  await page.waitForTimeout(3000);
+
+  // await browser.close();
 };
