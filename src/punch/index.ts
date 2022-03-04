@@ -1,12 +1,31 @@
 import Puppeteer from "puppeteer";
 import config from "../config";
 
+const clickOnParent = async (
+  page: Puppeteer.Page,
+  id: string
+): Promise<void> => {
+  await page.waitForSelector(`#${id}`);
+
+  await page.evaluate((_id) => {
+    const element = document.getElementById(_id);
+
+    return Promise.resolve(element?.parentElement?.click());
+  }, id);
+};
+
 export const doPunch = async () => {
   const browser = await Puppeteer.launch(config.launchOptions);
   const page = await browser.newPage();
 
   // Go to login page
   await page.goto(config.loginUrl);
+
+  // Wait for page loads
+  await page.waitForNetworkIdle();
+
+  // Wait for input shows
+  await page.waitForSelector("input[name=username]");
 
   // Fill username and password
   await page.type("input[name=username]", config.username);
@@ -15,30 +34,22 @@ export const doPunch = async () => {
   // Do login
   await page.click("button[type=submit]");
 
-  // Wait for punch navigation button be available and then click it
-  await page.waitForSelector("#inOutIcon");
-  const inOutIcon = await page.$("#inOutIcon");
-  await (
-    (await inOutIcon?.getProperty(
-      "parentElement"
-    )) as Puppeteer.ElementHandle<Element>
-  ).click();
+  await page.waitForNetworkIdle();
 
-  // Do punch
-  await page.waitForSelector("#saveIcon");
-  await page.waitForNavigation({ waitUntil: "networkidle2" });
-  const elementChild = await page.$("#saveIcon");
-  if (elementChild) {
-    const parent = (
-      await elementChild.getProperty("parentElement")
-    ).asElement();
+  // Click on IN/OUT
+  await clickOnParent(page, "inOutIcon");
 
-    console.log("parent", parent);
-    parent?.click();
-  }
-  console.log("here3");
+  // Wait for page loads
+  await page.waitForNetworkIdle();
 
-  await page.waitForTimeout(3000);
+  // Click on SAVE
+  // await clickOnParent(page, "saveIcon");
 
-  // await browser.close();
+  // Wait for page loads
+  await page.waitForNetworkIdle();
+
+  // TODO ADD TEST TO SEE IF PUNCHED CORRECTLY AND THROW ERROR IF NOT
+
+  // Close browser
+  await browser.close();
 };
