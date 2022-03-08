@@ -14,10 +14,16 @@ const clickOnParent = async (
   }, id);
 };
 
-export const doPunch = async () => {
+const getBrowserAndPage = async (): Promise<
+  [Puppeteer.Browser, Puppeteer.Page]
+> => {
   const browser = await Puppeteer.launch(config.launchOptions);
   const page = await browser.newPage();
 
+  return [browser, page];
+};
+
+const doLogin = async (page: Puppeteer.Page): Promise<void> => {
   // Go to login page
   await page.goto(config.loginUrl);
 
@@ -34,8 +40,11 @@ export const doPunch = async () => {
   // Do login
   await page.click("button[type=submit]");
 
+  // Wait for page loads
   await page.waitForNetworkIdle();
+};
 
+const setUserPunch = async (page: Puppeteer.Page): Promise<void> => {
   // Click on IN/OUT
   await clickOnParent(page, "inOutIcon");
 
@@ -43,13 +52,54 @@ export const doPunch = async () => {
   await page.waitForNetworkIdle();
 
   // Click on SAVE
-  // await clickOnParent(page, "saveIcon");
+  await clickOnParent(page, "saveIcon");
 
   // Wait for page loads
   await page.waitForNetworkIdle();
-
-  // TODO ADD TEST TO SEE IF PUNCHED CORRECTLY AND THROW ERROR IF NOT
-
-  // Close browser
-  await browser.close();
 };
+
+export const doPunch = (): Promise<void> =>
+  new Promise((resolve, reject) => {
+    getBrowserAndPage()
+      .then(([browser, page]) => {
+        // Add interceptors to check set punch response
+        page.on("requestfailed", (event) => {
+          if (event.isInterceptResolutionHandled()) {
+            return;
+          }
+
+          if (event.url().includes("Method=setUserPunch")) {
+            reject(new Error("Request failed"));
+          }
+
+          event.continue();
+        });
+
+        page.on("response", async (response) => {
+          if (response.url().includes("Method=setUserPunch")) {
+            const body = await response.json();
+
+            if (response.ok() && body?.api_retval) {
+              resolve();
+            } else {
+              reject(new Error("Request failed"));
+            }
+          }
+        });
+
+        doLogin(page)
+          .then(() => {
+            setUserPunch(page)
+              .then(() => {
+                // Close browser
+                browser
+                  .close()
+                  .then(() => resolve())
+                  .catch(() => resolve());
+              })
+              .catch((e) => reject(e));
+          })
+          .catch((e) => reject(e));
+      })
+      .catch((e) => reject(e));
+  });

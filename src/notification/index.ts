@@ -10,10 +10,10 @@ export const notifySuccess = () => {
   });
 };
 
-export const notifyFailure = () => {
+export const notifyFailure = (error: Error) => {
   notifier.notify({
     title,
-    message: "Failed on do punch",
+    message: `Failed on do punch: ${error.message}`,
     sound: true,
   });
 };
