@@ -39,7 +39,7 @@ const config: IConfig = {
   username: USERNAME,
   password: PASSWORD,
   launchOptions: {
-    headless: false,
+    headless: true,
     defaultViewport: { width: 1000, height: 800 },
   },
 };
