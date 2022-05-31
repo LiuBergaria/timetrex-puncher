@@ -72,14 +72,16 @@ export const doPunch = (): Promise<void> =>
       });
 
       page.on("response", async (response) => {
-        if (response.url().includes("Method=setUserPunch")) {
-          const body = await response.json();
+        if (!response.url().includes("Method=setUserPunch")) {
+          return;
+        }
 
-          if (response.ok() && body?.api_retval) {
-            resolve();
-          } else {
-            reject(new Error("Request failed"));
-          }
+        const body = await response.json();
+
+        if (response.ok() && body?.api_retval) {
+          resolve();
+        } else {
+          reject(new Error("Request failed"));
         }
       });
 
