@@ -1,19 +1,6 @@
 import Puppeteer from "puppeteer";
 import config from "../config";
 
-const clickOnParent = async (
-  page: Puppeteer.Page,
-  id: string
-): Promise<void> => {
-  await page.waitForSelector(`#${id}`);
-
-  await page.evaluate((_id) => {
-    const element = document.getElementById(_id);
-
-    return Promise.resolve(element?.parentElement?.click());
-  }, id);
-};
-
 const getBrowserAndPage = async (): Promise<
   [Puppeteer.Browser, Puppeteer.Page]
 > => {
@@ -46,13 +33,13 @@ const doLogin = async (page: Puppeteer.Page): Promise<void> => {
 
 const setUserPunch = async (page: Puppeteer.Page): Promise<void> => {
   // Click on IN/OUT
-  await clickOnParent(page, "inOutIcon");
+  await page.click("span.topbar-icon.topbar-inout");
 
   // Wait for page loads
   await page.waitForNetworkIdle();
 
   // Click on SAVE
-  await clickOnParent(page, "saveIcon");
+  await page.click("#context-button-save");
 
   // Wait for page loads
   await page.waitForNetworkIdle();
