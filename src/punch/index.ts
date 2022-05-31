@@ -45,48 +45,44 @@ const setUserPunch = async (page: Puppeteer.Page): Promise<void> => {
   await page.waitForNetworkIdle();
 };
 
+export const executeLoginAndPunch = async (
+  browser: Puppeteer.Browser,
+  page: Puppeteer.Page
+) => {
+  await doLogin(page);
+  await setUserPunch(page);
+
+  await browser.close();
+};
+
 export const doPunch = (): Promise<void> =>
   new Promise((resolve, reject) => {
-    getBrowserAndPage()
-      .then(([browser, page]) => {
-        // Add interceptors to check set punch response
-        page.on("requestfailed", (event) => {
-          if (event.isInterceptResolutionHandled()) {
-            return;
-          }
+    getBrowserAndPage().then(([browser, page]) => {
+      // Add interceptors to check set punch response
+      page.on("requestfailed", (event) => {
+        if (event.isInterceptResolutionHandled()) {
+          return;
+        }
 
-          if (event.url().includes("Method=setUserPunch")) {
+        if (event.url().includes("Method=setUserPunch")) {
+          reject(new Error("Request failed"));
+        }
+
+        event.continue();
+      });
+
+      page.on("response", async (response) => {
+        if (response.url().includes("Method=setUserPunch")) {
+          const body = await response.json();
+
+          if (response.ok() && body?.api_retval) {
+            resolve();
+          } else {
             reject(new Error("Request failed"));
           }
+        }
+      });
 
-          event.continue();
-        });
-
-        page.on("response", async (response) => {
-          if (response.url().includes("Method=setUserPunch")) {
-            const body = await response.json();
-
-            if (response.ok() && body?.api_retval) {
-              resolve();
-            } else {
-              reject(new Error("Request failed"));
-            }
-          }
-        });
-
-        doLogin(page)
-          .then(() => {
-            setUserPunch(page)
-              .then(() => {
-                // Close browser
-                browser
-                  .close()
-                  .then(() => resolve())
-                  .catch(() => resolve());
-              })
-              .catch((e) => reject(e));
-          })
-          .catch((e) => reject(e));
-      })
-      .catch((e) => reject(e));
+      executeLoginAndPunch(browser, page).then(resolve).catch(reject);
+    });
   });
