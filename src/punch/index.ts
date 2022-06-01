@@ -85,6 +85,6 @@ export const doPunch = (): Promise<void> =>
         }
       });
 
-      executeLoginAndPunch(browser, page).then(resolve).catch(reject);
+      executeLoginAndPunch(browser, page).catch(reject);
     });
   });
