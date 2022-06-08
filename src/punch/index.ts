@@ -32,13 +32,15 @@ const doLogin = async (page: Puppeteer.Page): Promise<void> => {
 };
 
 const setUserPunch = async (page: Puppeteer.Page): Promise<void> => {
-  // Click on IN/OUT
+  // Await for and click on IN/OUT
+  await page.waitForSelector("span.topbar-icon.topbar-inout");
   await page.click("span.topbar-icon.topbar-inout");
 
   // Wait for page loads
   await page.waitForNetworkIdle();
 
-  // Click on SAVE
+  // Await for and click on SAVE
+  await page.waitForSelector("#context-button-save");
   await page.click("#context-button-save");
 
   // Wait for page loads
